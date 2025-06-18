@@ -11,10 +11,13 @@ export const getReportsByPatientId = async (patientId) => {
   }
 };
 
-export const getAllReports = async (date) => {
+export const getAllReports = async ({ startDate, endDate } = {}) => {
   try {
-    const formattedDate = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const res = await api.get(`/reports?date=${formattedDate}`);
+    const params = {};
+    if (startDate) params.startDate = startDate.toISOString().split('T')[0];
+    if (endDate) params.endDate = endDate.toISOString().split('T')[0];
+    const queryString = new URLSearchParams(params).toString();
+    const res = await api.get(`/reports${queryString ? `?${queryString}` : ''}`);
     return res.data;
   } catch (err) {
     console.error('Error fetching all reports:', err);
@@ -22,10 +25,13 @@ export const getAllReports = async (date) => {
   }
 };
 
-export const getSummaryStats = async (date) => {
+export const getSummaryStats = async ({ startDate, endDate } = {}) => {
   try {
-    const formattedDate = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const res = await api.get(`/reports/summary?date=${formattedDate}`);
+    const params = {};
+    if (startDate) params.startDate = startDate.toISOString().split('T')[0];
+    if (endDate) params.endDate = endDate.toISOString().split('T')[0];
+    const queryString = new URLSearchParams(params).toString();
+    const res = await api.get(`/reports/summary${queryString ? `?${queryString}` : ''}`);
     return res.data;
   } catch (err) {
     console.error('Error fetching summary stats:', err);
@@ -33,10 +39,13 @@ export const getSummaryStats = async (date) => {
   }
 };
 
-export const getHighSugarAndHighPressureReports = async (date) => {
+export const getHighSugarAndHighPressureReports = async ({ startDate, endDate } = {}) => {
   try {
-    const formattedDate = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const res = await api.get(`/reports/high-sugar-high-pressure?date=${formattedDate}`);
+    const params = {};
+    if (startDate) params.startDate = startDate.toISOString().split('T')[0];
+    if (endDate) params.endDate = endDate.toISOString().split('T')[0];
+    const queryString = new URLSearchParams(params).toString();
+    const res = await api.get(`/reports/high-sugar-high-pressure${queryString ? `?${queryString}` : ''}`);
     return res.data;
   } catch (err) {
     console.error('Error fetching high sugar and high pressure reports:', err);

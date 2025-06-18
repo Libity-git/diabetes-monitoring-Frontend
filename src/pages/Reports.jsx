@@ -126,22 +126,27 @@ const Reports = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7))); // 31/05/2025
+  const [endDate, setEndDate] = useState(new Date()); // 07/06/2025 15:43
 
   const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAllReports(selectedDate);
-      console.log('Fetched report data:', data);
-      setReportData(data);
       setError(null);
+      const data = await getAllReports({ startDate, endDate });
+      console.log('Fetched report data:', data);
+      if (!data || data.length === 0) {
+        setError('ไม่พบข้อมูลรายงานสำหรับช่วงวันที่ที่เลือก');
+      } else {
+        setReportData(data);
+      }
     } catch (error) {
-      setError('ไม่สามารถโหลดข้อมูลรายงานได้');
       console.error('Error fetching reports:', error);
+      setError('ไม่สามารถโหลดข้อมูลรายงานได้');
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchReports();
@@ -153,6 +158,11 @@ const Reports = () => {
 
   const handleRefresh = () => {
     fetchReports();
+  };
+
+  const handleResetDates = () => {
+    setStartDate(new Date(new Date().setDate(new Date().getDate() - 7)));
+    setEndDate(new Date());
   };
 
   // ฟังก์ชันสำหรับแปลง mealTime ให้เป็นภาษาไทย
@@ -193,25 +203,26 @@ const Reports = () => {
 
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    saveAs(data, `Reports_${selectedDate.toISOString().split('T')[0]}.xlsx`);
+    const fileName = `Reports_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.xlsx`;
+    saveAs(data, fileName);
   };
 
   // คำนวณข้อมูลสรุป
-  const uniquePatients = [...new Set(reportData.map((report) => report.patient?.id))].length; // จำนวนผู้ป่วยที่ไม่ซ้ำกัน
+  const uniquePatients = reportData.length > 0 ? [...new Set(reportData.map((report) => report.patient?.id))].length : 0;
+  const criticalPatients = reportData.length > 0
+    ? [...new Set(
+        reportData
+          .filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง' || report.systolicStatus === 'เสี่ยงสูง')
+          .map((report) => report.patient?.id)
+      )].length
+    : 0;
 
-  // คำนวณจำนวนผู้ป่วยที่มีความเสี่ยง (unique patients ที่มี bloodSugarStatus หรือ systolicStatus เป็น 'เสี่ยงสูง (ควรพบแพทย์)')
-  const criticalPatients = [...new Set(
-    reportData
-      .filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง' || report.systolicStatus === 'เสี่ยงสูง')
-      .map((report) => report.patient?.id)
-  )].length;
-
-  const highSugarCount = reportData.filter((report) => report.bloodSugarStatus === 'สูง').length;
-  const criticalSugarCount = reportData.filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง').length;
-  const lowSugarCount = reportData.filter((report) => report.bloodSugarStatus === 'ต่ำ').length;
-  const highPressureCount = reportData.filter((report) => report.systolicStatus === 'สูง').length;
-  const criticalPressureCount = reportData.filter((report) => report.systolicStatus === 'เสี่ยงสูง').length;
-  const lowPressureCount = reportData.filter((report) => report.systolicStatus === 'ต่ำ').length;
+  const highSugarCount = reportData.length > 0 ? reportData.filter((report) => report.bloodSugarStatus === 'สูง').length : 0;
+  const criticalSugarCount = reportData.length > 0 ? reportData.filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง').length : 0;
+  const lowSugarCount = reportData.length > 0 ? reportData.filter((report) => report.bloodSugarStatus === 'ต่ำ').length : 0;
+  const highPressureCount = reportData.length > 0 ? reportData.filter((report) => report.systolicStatus === 'สูง').length : 0;
+  const criticalPressureCount = reportData.length > 0 ? reportData.filter((report) => report.systolicStatus === 'เสี่ยงสูง').length : 0;
+  const lowPressureCount = reportData.length > 0 ? reportData.filter((report) => report.systolicStatus === 'ต่ำ').length : 0;
 
   // เตรียม dataKeys สำหรับ ReportChart
   const dataKeys = tabIndex === 0
@@ -241,9 +252,21 @@ const Reports = () => {
           </Box>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <DatePicker
-              label="เลือกวันที่"
-              value={selectedDate}
-              onChange={(newDate) => setSelectedDate(newDate)}
+              label="วันที่เริ่มต้น"
+              value={startDate}
+              onChange={(newDate) => setStartDate(newDate)}
+              slotProps={{
+                textField: {
+                  variant: 'outlined',
+                  size: 'small',
+                  sx: { backgroundColor: theme.palette.common.white },
+                },
+              }}
+            />
+            <DatePicker
+              label="วันที่สิ้นสุด"
+              value={endDate}
+              onChange={(newDate) => setEndDate(newDate)}
               slotProps={{
                 textField: {
                   variant: 'outlined',
@@ -268,8 +291,20 @@ const Reports = () => {
             >
               Export เป็น Excel
             </StyledButton>
+            <StyledButton
+              variant="outlined"
+              onClick={handleResetDates}
+              sx={{ ml: 1 }}
+              disabled={loading}
+            >
+              รีเซ็ตวันที่
+            </StyledButton>
           </Box>
         </Box>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          ข้อมูลช่วงวันที่ {startDate.toLocaleDateString('th-TH')} - {endDate.toLocaleDateString('th-TH')}
+        </Typography>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
@@ -298,7 +333,7 @@ const Reports = () => {
                   {criticalPatients} คน
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mt={1}>
-                  ผู้ป่วยที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูงในวันที่เลือก
+                  ผู้ป่วยที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูงในช่วงวันที่เลือก
                 </Typography>
               </CardContent>
             </StyledCard>
@@ -318,7 +353,7 @@ const Reports = () => {
                   {uniquePatients} คน
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mt={1}>
-                  จำนวนผู้ป่วยที่บันทึกในวันที่เลือก
+                  จำนวนผู้ป่วยที่บันทึกในช่วงวันที่เลือก
                 </Typography>
               </CardContent>
             </StyledCard>

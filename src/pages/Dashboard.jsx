@@ -19,12 +19,17 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import DashboardStats from '../components/DashboardStats';
 import ReportChart from '../components/ReportChart';
-import { getSummaryStats, getHighSugarAndHighPressureReports, getAllReports } from '../services/reportService';
+import {
+  getSummaryStats,
+  getHighSugarAndHighPressureReports,
+  getAllReports,
+} from '../services/reportService';
 import { useAuth } from '../contexts/AuthContext';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import WarningIcon from '@mui/icons-material/Warning';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const DashboardContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -82,7 +87,8 @@ const Dashboard = () => {
   const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7))); // 31/05/2025
+  const [endDate, setEndDate] = useState(new Date()); // 07/06/2025 16:10
 
   const fetchData = useCallback(async () => {
     if (!isAuthenticated) {
@@ -93,15 +99,19 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching data for date:', selectedDate.toISOString());
+      console.log('Fetching data for period:', { startDate, endDate });
       const [statsData, reportsData, allReportsData] = await Promise.all([
-        getSummaryStats(selectedDate),
-        getHighSugarAndHighPressureReports(selectedDate),
-        getAllReports(selectedDate),
+        getSummaryStats({ startDate, endDate }),
+        getHighSugarAndHighPressureReports({ startDate, endDate }),
+        getAllReports({ startDate, endDate }),
       ]);
-      console.log('Stats Data:', statsData);
-      console.log('Reports Data:', reportsData);
-      console.log('All Reports Data:', allReportsData);
+      // Debug: ตรวจสอบโครงสร้างข้อมูล
+      console.log('Stats Data:', JSON.stringify(statsData, null, 2));
+      console.log('Reports Data:', JSON.stringify(reportsData, null, 2));
+      console.log('All Reports Data:', JSON.stringify(allReportsData, null, 2));
+      if (!statsData || !reportsData || !allReportsData) {
+        throw new Error(`ข้อมูลจากเซิร์ฟเวอร์ว่างเปล่าสำหรับช่วงวันที่ ${startDate.toISOString()} - ${endDate.toISOString()}`);
+      }
       setStats(statsData);
       setHighSugarAndHighPressureReports(reportsData);
       setAllReports(allReportsData);
@@ -113,13 +123,13 @@ const Dashboard = () => {
       }
       setError(
         err.response?.status === 500
-          ? 'เซิร์ฟเวอร์มีปัญหา กรุณาลองใหม่อีกครั้ง'
-          : 'เกิดข้อผิดพลาดในการโหลดข้อมูลแดชบอร์ด'
+          ? `เซิร์ฟเวอร์มีปัญหา กรุณาลองใหม่อีกครั้งสำหรับช่วงวันที่ ${startDate.toISOString()} - ${endDate.toISOString()}`
+          : err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลแดชบอร์ด'
       );
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, isAuthenticated, navigate]);
+  }, [startDate, endDate, isAuthenticated, navigate]);
 
   useEffect(() => {
     console.log('Dashboard mounted or location changed:', location.pathname);
@@ -131,6 +141,26 @@ const Dashboard = () => {
     console.log('Current state - reports:', highSugarAndHighPressureReports);
     console.log('Current state - all reports:', allReports);
   }, [stats, highSugarAndHighPressureReports, allReports]);
+
+  const handleDateChange = (type, newDate) => {
+    if (type === 'start' && newDate > endDate) {
+      setError('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด');
+      return;
+    }
+    if (type === 'end' && newDate < startDate) {
+      setError('วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น');
+      return;
+    }
+    setError(null);
+    type === 'start' ? setStartDate(newDate) : setEndDate(newDate);
+    fetchData(); // อัปเดตข้อมูลทันทีเมื่อเปลี่ยนวันที่
+  };
+
+  const handleResetDates = () => {
+    setStartDate(new Date(new Date().setDate(new Date().getDate() - 7)));
+    setEndDate(new Date());
+    setError(null);
+  };
 
   if (loading) {
     return (
@@ -166,19 +196,19 @@ const Dashboard = () => {
   const hasReportsData = highSugarAndHighPressureReports && highSugarAndHighPressureReports.length > 0;
 
   // คำนวณจำนวนผู้ป่วยที่มีความเสี่ยงโดยอิงจาก patient ID
-  const criticalPatientsCount = [...new Set(
-    highSugarAndHighPressureReports.map((report) => report.patient?.id)
-  )].length;
+  const criticalPatientsCount = hasReportsData
+    ? [...new Set(highSugarAndHighPressureReports.map((report) => report.patient?.id))].length
+    : 0;
 
-  const uniquePatients = [...new Set(allReports.map((report) => report.patient?.id))].length;
+ const uniquePatients = [...new Set(allReports.map((report) => report.patient?.id))].length;
 
   // เพิ่มการนับสำหรับสถานะเสี่ยงสูง
-  const criticalSugarToday = highSugarAndHighPressureReports.filter(
-    (report) => report.bloodSugarStatus === 'เสี่ยงสูง'
-  ).length;
-  const criticalPressureToday = highSugarAndHighPressureReports.filter(
-    (report) => report.systolicStatus === 'เสี่ยงสูง'
-  ).length;
+  const criticalSugarToday = hasReportsData
+    ? highSugarAndHighPressureReports.filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง').length
+    : 0;
+  const criticalPressureToday = hasReportsData
+    ? highSugarAndHighPressureReports.filter((report) => report.systolicStatus === 'เสี่ยงสูง').length
+    : 0;
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -190,19 +220,65 @@ const Dashboard = () => {
               แดชบอร์ดภาพรวมสุขภาพ
             </Typography>
           </Box>
-          <DatePicker
-            label="เลือกวันที่"
-            value={selectedDate}
-            onChange={(newDate) => setSelectedDate(newDate)}
-            slotProps={{
-              textField: {
-                variant: 'outlined',
-                size: 'small',
-                sx: { backgroundColor: theme.palette.common.white },
-              },
-            }}
-          />
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <DatePicker
+              label="วันที่เริ่มต้น"
+              value={startDate}
+              onChange={(newDate) => handleDateChange('start', newDate)}
+              slotProps={{
+                textField: {
+                  variant: 'outlined',
+                  size: 'small',
+                  sx: { backgroundColor: theme.palette.common.white },
+                },
+              }}
+            />
+            <DatePicker
+              label="วันที่สิ้นสุด"
+              value={endDate}
+              onChange={(newDate) => handleDateChange('end', newDate)}
+              slotProps={{
+                textField: {
+                  variant: 'outlined',
+                  size: 'small',
+                  sx: { backgroundColor: theme.palette.common.white },
+                },
+              }}
+            />
+            <StyledButton
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={fetchData}
+              disabled={loading}
+            >
+              รีเฟรช
+            </StyledButton>
+            <StyledButton
+              variant="outlined"
+              onClick={handleResetDates}
+              sx={{ ml: 1 }}
+              disabled={loading}
+            >
+              รีเซ็ตวันที่
+            </StyledButton>
+          </Box>
         </Box>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          ข้อมูลช่วงวันที่ {startDate.toLocaleDateString('th-TH')} - {endDate.toLocaleDateString('th-TH')}
+        </Typography>
+
+        {criticalPatientsCount > 0 && (
+          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+            มีผู้ป่วย {criticalPatientsCount} รายที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูง กรุณาตรวจสอบ!
+          </Alert>
+        )}
+
+        {(!hasStatsData && !hasReportsData) && (
+          <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+            ไม่มีข้อมูลสำหรับช่วงวันที่เลือก กรุณาเลือกช่วงวันที่อื่นหรือตรวจสอบฐานข้อมูล
+          </Alert>
+        )}
 
         <Grid container spacing={3}>
           {/* การ์ดสรุปผู้ป่วยที่มีความเสี่ยง */}
@@ -219,7 +295,7 @@ const Dashboard = () => {
                   {criticalPatientsCount} คน
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mt={1}>
-                  ผู้ป่วยที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูงในวันที่เลือก
+                  ผู้ป่วยที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูงในช่วงวันที่เลือก
                 </Typography>
                 {criticalPatientsCount > 0 && (
                   <StyledButton
@@ -250,7 +326,7 @@ const Dashboard = () => {
                   {uniquePatients} คน
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mt={1}>
-                  จำนวนผู้ป่วยที่บันทึกในวันที่เลือก
+                  จำนวนผู้ป่วยที่บันทึกในช่วงวันที่เลือก
                 </Typography>
               </CardContent>
             </StyledCard>
@@ -333,7 +409,7 @@ const Dashboard = () => {
                   />
                 ) : (
                   <Typography variant="body1" color="text.secondary" align="center">
-                    ไม่มีข้อมูลสำหรับวันที่เลือก
+                    ไม่มีข้อมูลสำหรับช่วงวันที่เลือก
                   </Typography>
                 )}
               </Box>
@@ -353,7 +429,7 @@ const Dashboard = () => {
                 <DashboardStats stats={stats} />
               ) : (
                 <Typography variant="body1" color="text.secondary" align="center">
-                  ไม่มีข้อมูลสถิติสำหรับวันที่เลือก
+                  ไม่มีข้อมูลสถิติสำหรับช่วงวันที่เลือก
                 </Typography>
               )}
             </StyledPaper>

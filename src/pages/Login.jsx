@@ -92,7 +92,7 @@ const Login = () => {
             variant="h5" 
             sx={{ fontWeight: 'bold', color: 'primary.main' }}
           >
-            เข้าสู่ระบบผู้ดูแล
+            เข้าสู่ระบบ diabetes-monitoring
           </Typography>
           <Typography 
             variant="body2" 

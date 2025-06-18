@@ -16,11 +16,17 @@ import {
   TextField,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete'; // เพิ่ม DeleteIcon
 import SearchIcon from '@mui/icons-material/Search';
-import AddIcon from '@mui/icons-material/Add'; // เพิ่มการ import AddIcon
+import AddIcon from '@mui/icons-material/Add';
 import { Link } from 'react-router-dom';
 import * as patientService from '../services/patientService';
 
@@ -54,6 +60,8 @@ const Patients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false); // สำหรับ Dialog ยืนยันการลบ
+  const [patientToDelete, setPatientToDelete] = useState(null); // เก็บ ID ผู้ป่วยที่ต้องการลบ
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -85,6 +93,36 @@ const Patients = () => {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+  };
+
+  // ฟังก์ชันเปิด Dialog ยืนยันการลบ
+  const handleDeleteClick = (id) => {
+    setPatientToDelete(id);
+    setOpenDialog(true);
+  };
+
+  // ฟังก์ชันลบผู้ป่วย
+  const handleDeleteConfirm = async () => {
+    try {
+      setLoading(true);
+      await patientService.deletePatient(patientToDelete);
+      setPatients(patients.filter((p) => p.id !== patientToDelete));
+      setFilteredPatients(filteredPatients.filter((p) => p.id !== patientToDelete));
+      setError(null);
+    } catch (error) {
+      setError('ไม่สามารถลบผู้ป่วยได้');
+      console.error('Error deleting patient:', error);
+    } finally {
+      setLoading(false);
+      setOpenDialog(false);
+      setPatientToDelete(null);
+    }
+  };
+
+  // ฟังก์ชันยกเลิกการลบ
+  const handleDeleteCancel = () => {
+    setOpenDialog(false);
+    setPatientToDelete(null);
   };
 
   return (
@@ -136,7 +174,7 @@ const Patients = () => {
                 <TableCell sx={{ fontWeight: 'bold' }}>อายุ</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>เบอร์โทร</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                  ดูข้อมูล
+                  การจัดการ
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -173,6 +211,13 @@ const Patients = () => {
                       >
                         <VisibilityIcon />
                       </IconButton>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleDeleteClick(p.id)}
+                        sx={{ ml: 1 }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))
@@ -181,6 +226,29 @@ const Patients = () => {
           </Table>
         </TableContainer>
       </StyledPaper>
+
+      {/* Dialog ยืนยันการลบ */}
+      <Dialog
+        open={openDialog}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"ยืนยันการลบผู้ป่วย"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            คุณแน่ใจหรือไม่ที่จะลบผู้ป่วยนี้? การกระทำนี้ไม่สามารถกู้คืนได้
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            ยกเลิก
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+            ลบ
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PatientsContainer>
   );
 };
