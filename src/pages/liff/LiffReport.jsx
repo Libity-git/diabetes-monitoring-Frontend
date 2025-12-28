@@ -110,8 +110,12 @@ const LiffReport = () => {
       await axios.post(`${API_URL}/api/liff/report`, {
         lineUserId: profile.userId,
         bloodSugar,
+        mealTime: form.mealTime,
         systolic,
         diastolic,
+        pulse,
+        bloodSugarStatus,
+        systolicStatus,
       });
 
       setResult({ bloodSugarStatus, systolicStatus, bloodSugar, systolic, diastolic });
