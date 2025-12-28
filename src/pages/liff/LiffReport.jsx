@@ -37,7 +37,7 @@ const LiffReport = () => {
           setProfile(userProfile);
           // Check if registered
           try {
-            const res = await axios.get(`${API_URL}/api/users/${userProfile.userId}`);
+            const res = await axios.get(`${API_URL}/api/liff/patient/${userProfile.userId}`);
             if (res.data) {
               setPatient(res.data);
             } else {
@@ -106,17 +106,12 @@ const LiffReport = () => {
         else systolicStatus = 'เสี่ยงสูง';
       }
 
-      // Submit report
-      await axios.post(`${API_URL}/api/reports`, {
-        patientId: patient.id,
+      // Submit report via LIFF API
+      await axios.post(`${API_URL}/api/liff/report`, {
+        lineUserId: profile.userId,
         bloodSugar,
-        mealTime: form.mealTime || 'other',
         systolic,
         diastolic,
-        pulse,
-        bloodSugarStatus,
-        systolicStatus,
-        recordedAt: new Date().toISOString(),
       });
 
       setResult({ bloodSugarStatus, systolicStatus, bloodSugar, systolic, diastolic });

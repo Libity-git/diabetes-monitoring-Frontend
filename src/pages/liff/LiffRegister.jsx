@@ -35,7 +35,7 @@ const LiffRegister = () => {
           setProfile(userProfile);
           // Check if already registered
           try {
-            const res = await axios.get(`${API_URL}/api/users/${userProfile.userId}`);
+            const res = await axios.get(`${API_URL}/api/liff/patient/${userProfile.userId}`);
             if (res.data) {
               setAlreadyRegistered(true);
               setExistingPatient(res.data);
@@ -82,7 +82,7 @@ const LiffRegister = () => {
     }
 
     try {
-      await axios.post(`${API_URL}/api/users`, {
+      await axios.post(`${API_URL}/api/liff/register`, {
         lineUserId: profile.userId,
         name: form.name,
         gender: form.gender,

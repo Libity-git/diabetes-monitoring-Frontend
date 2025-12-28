@@ -32,12 +32,17 @@ const LiffHealthInfo = () => {
         const userProfile = await getLiffProfile();
         if (userProfile) {
           setProfile(userProfile);
-          // Fetch patient data
+          // Fetch patient data and reports
           try {
-            const res = await axios.get(`${API_URL}/api/users/${userProfile.userId}`);
+            const res = await axios.get(`${API_URL}/api/liff/health/${userProfile.userId}`);
             if (res.data) {
-              setPatient(res.data);
-              await fetchReports(res.data);
+              setPatient(res.data.patient);
+              setReports(res.data.recentReports);
+              setStats({
+                avgSugar: res.data.stats.avgBloodSugar || 0,
+                avgSystolic: res.data.stats.avgSystolic || 0,
+                totalReports: res.data.stats.totalReports || 0,
+              });
             } else {
               setNotRegistered(true);
             }
@@ -50,34 +55,6 @@ const LiffHealthInfo = () => {
     };
     init();
   }, []);
-
-  const fetchReports = async (patientData) => {
-    try {
-      const reportsRes = await axios.get(`${API_URL}/api/reports`);
-      const patientReports = reportsRes.data
-        .filter(r => r.patientId === patientData.id)
-        .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
-        .slice(0, 10);
-      
-      setReports(patientReports);
-
-      if (patientReports.length > 0) {
-        const sugarReports = patientReports.filter(r => r.bloodSugar > 0);
-        const pressureReports = patientReports.filter(r => r.systolic > 0);
-        
-        const avgSugar = sugarReports.length > 0 
-          ? Math.round(sugarReports.reduce((sum, r) => sum + r.bloodSugar, 0) / sugarReports.length)
-          : 0;
-        const avgSystolic = pressureReports.length > 0
-          ? Math.round(pressureReports.reduce((sum, r) => sum + r.systolic, 0) / pressureReports.length)
-          : 0;
-        
-        setStats({ avgSugar, avgSystolic, totalReports: patientReports.length });
-      }
-    } catch (err) {
-      console.error('Error fetching reports:', err);
-    }
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
