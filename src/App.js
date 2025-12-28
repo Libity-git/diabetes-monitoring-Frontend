@@ -1,8 +1,6 @@
 // 📁 src/App.jsx
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Box } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import Reports from './pages/Reports';
@@ -13,28 +11,12 @@ import Navbar from './components/Navbar';
 import PatientDetail from './components/PatientDetail';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { cn } from './lib/utils';
 
-const MainContent = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'isSidebarOpen',
-})(({ theme, isSidebarOpen }) => ({
-  flexGrow: 1,
-  padding: theme.spacing(3),
-  marginTop: theme.spacing(8),
-  marginLeft: isSidebarOpen ? { sm: `${240}px` } : { sm: `${60}px` },
-  transition: theme.transitions.create(['margin-left', 'width'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.standard,
-  }),
-  minHeight: '100vh',
-  backgroundColor: theme.palette.background.default,
-  width: isSidebarOpen ? { sm: `calc(100% - ${240}px)` } : { sm: `calc(100% - ${60}px)` },
-  [theme.breakpoints.down('sm')]: {
-    marginTop: theme.spacing(7),
-    padding: theme.spacing(2),
-    marginLeft: 0,
-    width: '100%',
-  },
-}));
+// LIFF Pages
+import LiffRegister from './pages/liff/LiffRegister';
+import LiffReport from './pages/liff/LiffReport';
+import LiffHealthInfo from './pages/liff/LiffHealthInfo';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -46,14 +28,25 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      
+      {/* LIFF Routes (No authentication required) */}
+      <Route path="/liff/register" element={<LiffRegister />} />
+      <Route path="/liff/report" element={<LiffReport />} />
+      <Route path="/liff/health-info" element={<LiffHealthInfo />} />
       <Route
         path="/*"
         element={
           <ProtectedRoute>
-            <Box sx={{ display: 'flex' }}>
+            <div className="min-h-screen bg-slate-50">
               <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-              <MainContent isSidebarOpen={isSidebarOpen}>
-                <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+              <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+              
+              <main
+                className={cn(
+                  "pt-20 pb-8 px-4 lg:px-8 transition-all duration-300 min-h-screen",
+                  isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
+                )}
+              >
                 <Routes>
                   <Route index element={<Dashboard />} />
                   <Route path="patients" element={<Patients />} />
@@ -62,8 +55,8 @@ function App() {
                   <Route path="patients/:patientId" element={<PatientDetail />} />
                   <Route path="patients/new" element={<PatientDetail />} />
                 </Routes>
-              </MainContent>
-            </Box>
+              </main>
+            </div>
           </ProtectedRoute>
         }
       />

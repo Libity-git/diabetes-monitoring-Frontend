@@ -1,142 +1,61 @@
 // 📁 src/pages/Reports.jsx
 import React, { useEffect, useState, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Skeleton } from '../components/ui/skeleton';
 import {
-  Container,
-  Typography,
-  Grid,
-  Paper,
-  Tabs,
-  Tab,
-  Box,
-  CircularProgress,
-  Alert,
-  Button,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
+  TableHeader,
   TableRow,
-  Card,
-  CardContent,
-  Chip,
-} from '@mui/material';
-import { styled, useTheme } from '@mui/material/styles';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
-import WarningIcon from '@mui/icons-material/Warning';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+} from '../components/ui/table';
 import { getAllReports } from '../services/reportService';
-import ReportChart from '../components/ReportChart';
+import {
+  FileText,
+  RefreshCw,
+  Download,
+  Calendar,
+  AlertTriangle,
+  Droplets,
+  Heart,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Activity,
+  Loader2,
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
-// Styled components
-const ReportsContainer = styled(Container)(({ theme }) => ({
-  padding: theme.spacing(3),
-  background: `linear-gradient(180deg, ${theme.palette.grey[50]} 0%, ${theme.palette.background.default} 100%)`,
-  minHeight: '100vh',
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2),
-  },
-}));
-
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  borderRadius: theme.shape.borderRadius * 2,
-  backgroundColor: theme.palette.common.white,
-  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-  transition: 'all 0.3s ease-in-out',
-  '&:hover': {
-    boxShadow: '0 6px 25px rgba(0, 0, 0, 0.1)',
-  },
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2),
-  },
-}));
-
-const StyledTabs = styled(Tabs)(({ theme }) => ({
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  '& .MuiTab-root': {
-    textTransform: 'none',
-    fontWeight: 'bold',
-    fontSize: '1rem',
-    padding: theme.spacing(1.5, 3),
-    borderRadius: `${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0`,
-    transition: 'all 0.3s ease-in-out',
-    color: theme.palette.text.primary,
-    backgroundColor: theme.palette.grey[100],
-    '&:hover': {
-      backgroundColor: theme.palette.grey[200],
-    },
-  },
-  '& .Mui-selected': {
-    backgroundColor: theme.palette.primary.main,
-    color: theme.palette.common.white,
-    '&:hover': {
-      backgroundColor: theme.palette.primary.dark,
-    },
-  },
-  '& .MuiTabs-indicator': {
-    backgroundColor: theme.palette.primary.main,
-    height: 3,
-  },
-}));
-
-const StyledButton = styled(Button)(({ theme }) => ({
-  textTransform: 'none',
-  borderRadius: theme.shape.borderRadius * 2,
-  padding: theme.spacing(1, 2),
-  fontWeight: 'medium',
-  backgroundColor: theme.palette.primary.main,
-  color: theme.palette.common.white,
-  '&:hover': {
-    backgroundColor: theme.palette.primary.dark,
-  },
-}));
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  fontWeight: 'medium',
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  padding: theme.spacing(1.5),
-  '&:first-of-type': {
-    fontWeight: 'bold',
-  },
-}));
-
-const StyledCard = styled(Card)(({ theme }) => ({
-  borderRadius: theme.shape.borderRadius * 2,
-  backgroundColor: theme.palette.common.white,
-  boxShadow: '0 2px 15px rgba(0, 0, 0, 0.05)',
-  transition: 'all 0.3s ease-in-out',
-  '&:hover': {
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-    transform: 'translateY(-2px)',
-  },
-}));
-
 const Reports = () => {
-  const theme = useTheme();
   const [reportData, setReportData] = useState([]);
   const [tabIndex, setTabIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7))); // 31/05/2025
-  const [endDate, setEndDate] = useState(new Date()); // 07/06/2025 15:43
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)));
+  const [endDate, setEndDate] = useState(new Date());
 
   const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await getAllReports({ startDate, endDate });
-      console.log('Fetched report data:', data);
       if (!data || data.length === 0) {
-        setError('ไม่พบข้อมูลรายงานสำหรับช่วงวันที่ที่เลือก');
+        setReportData([]);
       } else {
         setReportData(data);
       }
@@ -152,49 +71,39 @@ const Reports = () => {
     fetchReports();
   }, [fetchReports]);
 
-  const handleTabChange = (event, newValue) => {
-    setTabIndex(newValue);
-  };
-
-  const handleRefresh = () => {
-    fetchReports();
-  };
-
-  const handleResetDates = () => {
-    setStartDate(new Date(new Date().setDate(new Date().getDate() - 7)));
-    setEndDate(new Date());
-  };
-
-  // ฟังก์ชันสำหรับแปลง mealTime ให้เป็นภาษาไทย
   const formatMealTime = (mealTime) => {
     switch (mealTime) {
-      case 'before':
-        return 'ก่อนอาหาร';
-      case 'after':
-        return 'หลังอาหาร';
-      case 'other':
-        return 'อื่นๆ';
-      default:
-        return '-';
+      case 'before': return 'ก่อนอาหาร';
+      case 'after': return 'หลังอาหาร';
+      case 'other': return 'อื่นๆ';
+      default: return '-';
     }
   };
 
-  // ฟังก์ชันสำหรับ export ตารางเป็น Excel
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'เสี่ยงสูง':
+        return <Badge variant="danger">{status}</Badge>;
+      case 'สูง':
+        return <Badge variant="warning">{status}</Badge>;
+      case 'ต่ำ':
+        return <Badge variant="info">{status}</Badge>;
+      case 'ปกติ':
+        return <Badge variant="success">{status}</Badge>;
+      default:
+        return <Badge variant="secondary">-</Badge>;
+    }
+  };
+
   const exportToExcel = () => {
     const formattedData = reportData.map((report) => ({
       'ชื่อผู้ป่วย': report.patient?.name || 'ไม่ระบุ',
       'ระดับน้ำตาล': report.bloodSugar || '-',
       'สถานะน้ำตาล': report.bloodSugarStatus || '-',
-      'ความดัน (ซิสโตลิก/ไดแอสโตลิก)': `${report.systolic || '-'}/${report.diastolic || '-'}`,
+      'ความดัน': `${report.systolic || '-'}/${report.diastolic || '-'}`,
       'สถานะความดัน': report.systolicStatus || '-',
-      'ช่วงเวลาที่วัด': formatMealTime(report.mealTime),
-      'วันที่บันทึก': new Date(report.recordedAt).toLocaleString('th-TH', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      'ช่วงเวลา': formatMealTime(report.mealTime),
+      'วันที่บันทึก': new Date(report.recordedAt).toLocaleString('th-TH'),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
@@ -203,341 +112,378 @@ const Reports = () => {
 
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    const fileName = `Reports_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.xlsx`;
-    saveAs(data, fileName);
+    saveAs(data, `Reports_${startDate.toISOString().split('T')[0]}_${endDate.toISOString().split('T')[0]}.xlsx`);
   };
 
-  // คำนวณข้อมูลสรุป
-  const uniquePatients = reportData.length > 0 ? [...new Set(reportData.map((report) => report.patient?.id))].length : 0;
-  const criticalPatients = reportData.length > 0
-    ? [...new Set(
-        reportData
-          .filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง' || report.systolicStatus === 'เสี่ยงสูง')
-          .map((report) => report.patient?.id)
-      )].length
-    : 0;
+  // Stats calculations
+  const uniquePatients = [...new Set(reportData.map((r) => r.patient?.id))].length;
+  const criticalPatients = [...new Set(
+    reportData
+      .filter((r) => r.bloodSugarStatus === 'เสี่ยงสูง' || r.systolicStatus === 'เสี่ยงสูง')
+      .map((r) => r.patient?.id)
+  )].length;
+  const highSugarCount = reportData.filter((r) => r.bloodSugarStatus === 'สูง').length;
+  const criticalSugarCount = reportData.filter((r) => r.bloodSugarStatus === 'เสี่ยงสูง').length;
+  const lowSugarCount = reportData.filter((r) => r.bloodSugarStatus === 'ต่ำ').length;
+  const highPressureCount = reportData.filter((r) => r.systolicStatus === 'สูง').length;
+  const criticalPressureCount = reportData.filter((r) => r.systolicStatus === 'เสี่ยงสูง').length;
+  const lowPressureCount = reportData.filter((r) => r.systolicStatus === 'ต่ำ').length;
 
-  const highSugarCount = reportData.length > 0 ? reportData.filter((report) => report.bloodSugarStatus === 'สูง').length : 0;
-  const criticalSugarCount = reportData.length > 0 ? reportData.filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง').length : 0;
-  const lowSugarCount = reportData.length > 0 ? reportData.filter((report) => report.bloodSugarStatus === 'ต่ำ').length : 0;
-  const highPressureCount = reportData.length > 0 ? reportData.filter((report) => report.systolicStatus === 'สูง').length : 0;
-  const criticalPressureCount = reportData.length > 0 ? reportData.filter((report) => report.systolicStatus === 'เสี่ยงสูง').length : 0;
-  const lowPressureCount = reportData.length > 0 ? reportData.filter((report) => report.systolicStatus === 'ต่ำ').length : 0;
+  // Chart data
+  const chartData = reportData.slice(0, 30).map((report) => ({
+    date: new Date(report.recordedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' }),
+    bloodSugar: report.bloodSugar,
+    systolic: report.systolic,
+    diastolic: report.diastolic,
+    name: report.patient?.name || 'ไม่ระบุ',
+  })).reverse();
 
-  // เตรียม dataKeys สำหรับ ReportChart
-  const dataKeys = tabIndex === 0
-    ? {
-        xAxis: 'recordedAt',
-        lines: [
-          { key: 'bloodSugar', name: 'ระดับน้ำตาล (mg/dL)', color: theme.palette.error.main },
-        ],
-      }
-    : {
-        xAxis: 'recordedAt',
-        lines: [
-          { key: 'systolic', name: 'ความดันซิสโตลิก (mmHg)', color: theme.palette.success.main },
-          { key: 'diastolic', name: 'ความดันไดแอสโตลิก (mmHg)', color: theme.palette.error.main },
-        ],
-      };
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-80 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <ReportsContainer maxWidth="lg">
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Box display="flex" alignItems="center" gap={2}>
-            <AssessmentIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
-            <Typography variant="h4" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-              รายงานค่าสุขภาพผู้ป่วย
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <DatePicker
-              label="วันที่เริ่มต้น"
-              value={startDate}
-              onChange={(newDate) => setStartDate(newDate)}
-              slotProps={{
-                textField: {
-                  variant: 'outlined',
-                  size: 'small',
-                  sx: { backgroundColor: theme.palette.common.white },
-                },
-              }}
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">รายงานค่าสุขภาพ</h1>
+            <p className="text-sm text-slate-500">
+              ข้อมูล {startDate.toLocaleDateString('th-TH')} - {endDate.toLocaleDateString('th-TH')}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 bg-white rounded-lg border px-3 py-2">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <input
+              type="date"
+              value={startDate.toISOString().split('T')[0]}
+              onChange={(e) => setStartDate(new Date(e.target.value))}
+              className="text-sm border-0 focus:ring-0 bg-transparent w-32"
             />
-            <DatePicker
-              label="วันที่สิ้นสุด"
-              value={endDate}
-              onChange={(newDate) => setEndDate(newDate)}
-              slotProps={{
-                textField: {
-                  variant: 'outlined',
-                  size: 'small',
-                  sx: { backgroundColor: theme.palette.common.white },
-                },
-              }}
+            <span className="text-slate-400">-</span>
+            <input
+              type="date"
+              value={endDate.toISOString().split('T')[0]}
+              onChange={(e) => setEndDate(new Date(e.target.value))}
+              className="text-sm border-0 focus:ring-0 bg-transparent w-32"
             />
-            <StyledButton
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={handleRefresh}
-              disabled={loading}
-            >
-              รีเฟรช
-            </StyledButton>
-            <StyledButton
-              variant="contained"
-              startIcon={<FileDownloadIcon />}
-              onClick={exportToExcel}
-              disabled={loading || reportData.length === 0}
-            >
-              Export เป็น Excel
-            </StyledButton>
-            <StyledButton
-              variant="outlined"
-              onClick={handleResetDates}
-              sx={{ ml: 1 }}
-              disabled={loading}
-            >
-              รีเซ็ตวันที่
-            </StyledButton>
-          </Box>
-        </Box>
+          </div>
+          <Button onClick={fetchReports} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            รีเฟรช
+          </Button>
+          <Button onClick={exportToExcel} disabled={loading || reportData.length === 0} variant="secondary">
+            <Download className="w-4 h-4 mr-2" />
+            Export Excel
+          </Button>
+        </div>
+      </div>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          ข้อมูลช่วงวันที่ {startDate.toLocaleDateString('th-TH')} - {endDate.toLocaleDateString('th-TH')}
-        </Typography>
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="w-4 h-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
+      {criticalPatients > 0 && (
+        <Alert variant="warning" className="border-amber-200 bg-amber-50">
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <span className="font-medium">แจ้งเตือน!</span> มีผู้ป่วย {criticalPatients} รายที่มีค่าเสี่ยงสูง
+          </AlertDescription>
+        </Alert>
+      )}
 
-        {criticalPatients > 0 && (
-          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
-            มีผู้ป่วย {criticalPatients} รายที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูง กรุณาตรวจสอบ!
-          </Alert>
-        )}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-500 to-rose-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-red-100 text-sm font-medium">ผู้ป่วยเสี่ยงสูง</p>
+                <p className="text-4xl font-bold mt-2">{criticalPatients}</p>
+                <p className="text-red-100 text-xs mt-1">คน</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Grid container spacing={3} mb={3}>
-          {/* การ์ดสรุปผู้ป่วยที่มีความเสี่ยง */}
-          <Grid item xs={12} sm={6} md={4}>
-            <StyledCard>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <WarningIcon sx={{ color: theme.palette.error.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                    ผู้ป่วยที่มีความเสี่ยง
-                  </Typography>
-                </Box>
-                <Typography variant="h4" sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}>
-                  {criticalPatients} คน
-                </Typography>
-                <Typography variant="body2" color="text.secondary" mt={1}>
-                  ผู้ป่วยที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูงในช่วงวันที่เลือก
-                </Typography>
-              </CardContent>
-            </StyledCard>
-          </Grid>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">ผู้ป่วยทั้งหมด</p>
+                <p className="text-4xl font-bold mt-2">{uniquePatients}</p>
+                <p className="text-blue-100 text-xs mt-1">คน</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Users className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* การ์ดสรุปจำนวนผู้ป่วยทั้งหมด */}
-          <Grid item xs={12} sm={6} md={4}>
-            <StyledCard>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <TrendingUpIcon sx={{ color: theme.palette.success.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                    จำนวนผู้ป่วยทั้งหมด
-                  </Typography>
-                </Box>
-                <Typography variant="h4" sx={{ color: theme.palette.success.main, fontWeight: 'bold' }}>
-                  {uniquePatients} คน
-                </Typography>
-                <Typography variant="body2" color="text.secondary" mt={1}>
-                  จำนวนผู้ป่วยที่บันทึกในช่วงวันที่เลือก
-                </Typography>
-              </CardContent>
-            </StyledCard>
-          </Grid>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-green-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-emerald-100 text-sm font-medium">รายงานทั้งหมด</p>
+                <p className="text-4xl font-bold mt-2">{reportData.length}</p>
+                <p className="text-emerald-100 text-xs mt-1">รายการ</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl">
+                <FileText className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* การ์ดสถานะ */}
-          <Grid item xs={12} md={4}>
-            <StyledCard>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <HealthAndSafetyIcon sx={{ color: theme.palette.info.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                    สถานะสุขภาพ
-                  </Typography>
-                </Box>
-                <Box display="flex" flexWrap="wrap" gap={1}>
-                  <Chip
-                    label={`น้ำตาลเสี่ยงสูง: ${criticalSugarCount}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium', backgroundColor: theme.palette.error.dark }}
+      {/* Health Status Summary */}
+      <Card className="shadow-lg border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Heart className="w-5 h-5 text-rose-500" />
+            สถานะสุขภาพ
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-red-500" />
+              <div>
+                <p className="text-xs text-slate-500">น้ำตาลเสี่ยงสูง</p>
+                <p className="font-bold text-red-600">{criticalSugarCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-orange-500" />
+              <div>
+                <p className="text-xs text-slate-500">น้ำตาลสูง</p>
+                <p className="font-bold text-orange-600">{highSugarCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+              <TrendingDown className="w-4 h-4 text-blue-500" />
+              <div>
+                <p className="text-xs text-slate-500">น้ำตาลต่ำ</p>
+                <p className="font-bold text-blue-600">{lowSugarCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-red-500" />
+              <div>
+                <p className="text-xs text-slate-500">ความดันเสี่ยงสูง</p>
+                <p className="font-bold text-red-600">{criticalPressureCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-orange-500" />
+              <div>
+                <p className="text-xs text-slate-500">ความดันสูง</p>
+                <p className="font-bold text-orange-600">{highPressureCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-cyan-50 rounded-lg">
+              <TrendingDown className="w-4 h-4 text-cyan-500" />
+              <div>
+                <p className="text-xs text-slate-500">ความดันต่ำ</p>
+                <p className="font-bold text-cyan-600">{lowPressureCount}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
+      <div className="flex gap-2 bg-slate-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setTabIndex(0)}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            tabIndex === 0
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-600 hover:text-slate-800'
+          }`}
+        >
+          <Droplets className="w-4 h-4 inline mr-2" />
+          น้ำตาลในเลือด
+        </button>
+        <button
+          onClick={() => setTabIndex(1)}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            tabIndex === 1
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-600 hover:text-slate-800'
+          }`}
+        >
+          <Heart className="w-4 h-4 inline mr-2" />
+          ความดันโลหิต
+        </button>
+      </div>
+
+      {/* Chart */}
+      <Card className="shadow-lg border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Activity className="w-5 h-5 text-blue-500" />
+            {tabIndex === 0 ? 'กราฟระดับน้ำตาลในเลือด' : 'กราฟความดันโลหิต'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {chartData.length > 0 ? (
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    }}
                   />
-                  <Chip
-                    label={`น้ำตาลสูง: ${highSugarCount}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                  <Chip
-                    label={`น้ำตาลต่ำ: ${lowSugarCount}`}
-                    color="warning"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                  <Chip
-                    label={`ความดันเสี่ยงสูง: ${criticalPressureCount}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium', backgroundColor: theme.palette.error.dark }}
-                  />
-                  <Chip
-                    label={`ความดันสูง: ${highPressureCount}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                  <Chip
-                    label={`ความดันต่ำ: ${lowPressureCount}`}
-                    color="warning"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                </Box>
-              </CardContent>
-            </StyledCard>
-          </Grid>
-        </Grid>
-
-        <StyledPaper>
-          <StyledTabs
-            value={tabIndex}
-            onChange={handleTabChange}
-            variant="standard"
-            sx={{ flexGrow: 1, mb: 3 }}
-          >
-            <Tab label="น้ำตาลในเลือด" />
-            <Tab label="ความดันโลหิต" />
-          </StyledTabs>
-
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-              <CircularProgress size={60} color="primary" />
-            </Box>
-          ) : reportData.length === 0 ? (
-            <Box sx={{ textAlign: 'center', p: 4 }}>
-              <Typography color="text.secondary" variant="h6" gutterBottom>
-                ไม่พบข้อมูลรายงาน
-              </Typography>
-              <Typography color="text.secondary">
-                ลองเปลี่ยนวันที่หรือรีเฟรชข้อมูล
-              </Typography>
-            </Box>
+                  <Legend />
+                  {tabIndex === 0 ? (
+                    <Line
+                      type="monotone"
+                      dataKey="bloodSugar"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={{ fill: '#ef4444', strokeWidth: 2 }}
+                      name="น้ำตาล (mg/dL)"
+                    />
+                  ) : (
+                    <>
+                      <Line
+                        type="monotone"
+                        dataKey="systolic"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+                        name="ซิสโตลิก (mmHg)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="diastolic"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={{ fill: '#10b981', strokeWidth: 2 }}
+                        name="ไดแอสโตลิก (mmHg)"
+                      />
+                    </>
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <Grid container spacing={3}>
-              {/* กราฟ */}
-              <Grid item xs={12}>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <AssessmentIcon sx={{ color: theme.palette.info.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                    {tabIndex === 0 ? 'กราฟระดับน้ำตาลในเลือด' : 'กราฟความดันโลหิต'}
-                  </Typography>
-                </Box>
-                <Box sx={{ height: { xs: 300, md: 400 } }}>
-                  <ReportChart
-                    data={reportData}
-                    dataKeys={dataKeys}
-                    chartTitle={tabIndex === 0 ? 'กราฟระดับน้ำตาลในเลือด' : 'กราฟความดันโลหิต'}
-                    tooltipEnabled={true}
-                  />
-                </Box>
-              </Grid>
-
-              {/* ตาราง */}
-              <Grid item xs={12}>
-                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 2px 15px rgba(0, 0, 0, 0.05)' }}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <StyledTableCell>ชื่อผู้ป่วย</StyledTableCell>
-                        <StyledTableCell>ระดับน้ำตาล</StyledTableCell>
-                        <StyledTableCell>สถานะน้ำตาล</StyledTableCell>
-                        <StyledTableCell>ความดัน (ซิสโตลิก/ไดแอสโตลิก)</StyledTableCell>
-                        <StyledTableCell>สถานะความดัน</StyledTableCell>
-                        <StyledTableCell>ช่วงเวลาที่วัด</StyledTableCell>
-                        <StyledTableCell>วันที่บันทึก</StyledTableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {reportData.map((report) => (
-                        <TableRow key={report.id} hover sx={{ '&:hover': { backgroundColor: theme.palette.grey[50] } }}>
-                          <StyledTableCell>{report.patient?.name || 'ไม่ระบุ'}</StyledTableCell>
-                          <StyledTableCell>{report.bloodSugar || '-'}</StyledTableCell>
-                          <StyledTableCell
-                            sx={{
-                              color:
-                                report.bloodSugarStatus === 'เสี่ยงสูง'
-                                  ? theme.palette.error.dark
-                                  : report.bloodSugarStatus === 'ต่ำ'
-                                  ? theme.palette.warning.main
-                                  : report.bloodSugarStatus === 'สูง'
-                                  ? theme.palette.error.main
-                                  : theme.palette.success.main,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
-                            {(report.bloodSugarStatus === 'เสี่ยงสูง' || report.bloodSugarStatus === 'ต่ำ' || report.bloodSugarStatus === 'สูง') && (
-                              <WarningIcon sx={{ fontSize: 16, color: 'inherit' }} />
-                            )}
-                            {report.bloodSugarStatus || '-'}
-                          </StyledTableCell>
-                          <StyledTableCell>{`${report.systolic || '-'}/${report.diastolic || '-'}`}</StyledTableCell>
-                          <StyledTableCell
-                            sx={{
-                              color:
-                                report.systolicStatus === 'เสี่ยงสูง'
-                                  ? theme.palette.error.dark
-                                  : report.systolicStatus === 'ต่ำ'
-                                  ? theme.palette.warning.main
-                                  : report.systolicStatus === 'สูง'
-                                  ? theme.palette.error.main
-                                  : theme.palette.success.main,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
-                            {(report.systolicStatus === 'เสี่ยงสูง' || report.systolicStatus === 'ต่ำ' || report.systolicStatus === 'สูง') && (
-                              <WarningIcon sx={{ fontSize: 16, color: 'inherit' }} />
-                            )}
-                            {report.systolicStatus || '-'}
-                          </StyledTableCell>
-                          <StyledTableCell>{formatMealTime(report.mealTime)}</StyledTableCell>
-                          <StyledTableCell>
-                            {new Date(report.recordedAt).toLocaleString('th-TH', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </StyledTableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Grid>
-            </Grid>
+            <div className="h-80 flex items-center justify-center text-slate-400">
+              <div className="text-center">
+                <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>ไม่มีข้อมูลสำหรับช่วงวันที่เลือก</p>
+              </div>
+            </div>
           )}
-        </StyledPaper>
-      </ReportsContainer>
-    </LocalizationProvider>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card className="shadow-lg border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <FileText className="w-5 h-5 text-violet-500" />
+            รายละเอียดรายงาน ({reportData.length} รายการ)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {reportData.length === 0 ? (
+            <div className="p-12 text-center text-slate-400">
+              <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>ไม่พบข้อมูลรายงาน</p>
+              <p className="text-sm mt-1">ลองเปลี่ยนช่วงวันที่หรือรีเฟรช</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead className="font-semibold">ชื่อผู้ป่วย</TableHead>
+                    <TableHead className="font-semibold">น้ำตาล</TableHead>
+                    <TableHead className="font-semibold">สถานะน้ำตาล</TableHead>
+                    <TableHead className="font-semibold">ความดัน</TableHead>
+                    <TableHead className="font-semibold">สถานะความดัน</TableHead>
+                    <TableHead className="font-semibold">ช่วงเวลา</TableHead>
+                    <TableHead className="font-semibold">วันที่</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportData.map((report) => (
+                    <TableRow key={report.id} className="hover:bg-slate-50">
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gradient-to-br from-violet-400 to-violet-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            {report.patient?.name?.charAt(0) || '?'}
+                          </div>
+                          <span className="font-medium">{report.patient?.name || 'ไม่ระบุ'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono">{report.bloodSugar || '-'}</span>
+                        <span className="text-slate-400 text-xs ml-1">mg/dL</span>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(report.bloodSugarStatus)}</TableCell>
+                      <TableCell>
+                        <span className="font-mono">{report.systolic || '-'}/{report.diastolic || '-'}</span>
+                        <span className="text-slate-400 text-xs ml-1">mmHg</span>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(report.systolicStatus)}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{formatMealTime(report.mealTime)}</Badge>
+                      </TableCell>
+                      <TableCell className="text-slate-500 text-sm">
+                        {new Date(report.recordedAt).toLocaleString('th-TH', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

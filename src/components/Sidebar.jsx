@@ -1,121 +1,136 @@
-// 📁 src/components/Sidebar.jsx
 import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { cn } from '../lib/utils';
+import { Button } from './ui/button';
 import {
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Box,
-  Typography,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import PeopleIcon from '@mui/icons-material/People';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import { Link, useLocation } from 'react-router-dom';
+  LayoutDashboard,
+  Users,
+  FileText,
+  UserCog,
+  Activity,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
-// Styled components
-const drawerWidth = 240;
-const collapsedWidth = 60;
-
-const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
-  width: open ? drawerWidth : collapsedWidth,
-  flexShrink: 0,
-  zIndex: theme.zIndex.appBar - 1,
-  transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.standard,
-  }),
-  '& .MuiDrawer-paper': {
-    width: open ? drawerWidth : collapsedWidth,
-    boxSizing: 'border-box',
-    backgroundColor: theme.palette.background.paper,
-    borderRight: `1px solid ${theme.palette.divider}`,
-    overflowX: 'hidden',
-    transition: theme.transitions.create('width', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.standard,
-    }),
-  },
-  [theme.breakpoints.down('sm')]: {
-    width: collapsedWidth,
-    '& .MuiDrawer-paper': {
-      width: collapsedWidth,
-    },
-    '& .MuiListItemText-root': {
-      display: 'none',
-    },
-    '& .MuiListItemIcon-root': {
-      justifyContent: 'center',
-    },
-  },
-}));
-
-const StyledListItem = styled(ListItem, {
-  shouldForwardProp: (prop) => prop !== 'active', // ป้องกัน active ถูกส่งไป DOM
-})(({ theme, active }) => ({
-  borderRadius: theme.shape.borderRadius,
-  margin: theme.spacing(0.5, 1),
-  transition: 'all 0.3s ease-in-out',
-  backgroundColor: active ? theme.palette.primary.light : 'transparent',
-  color: active ? theme.palette.primary.contrastText : theme.palette.text.primary,
-  '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-    transform: 'translateX(5px)',
-  },
-  '& .MuiListItemIcon-root': {
-    color: active ? theme.palette.primary.contrastText : theme.palette.text.secondary,
-    minWidth: 40,
-  },
-}));
+const menuItems = [
+  { path: '/', label: 'แดชบอร์ด', icon: LayoutDashboard },
+  { path: '/patients', label: 'ผู้ป่วย', icon: Users },
+  { path: '/reports', label: 'รายงาน', icon: FileText },
+  { path: '/admins', label: 'ผู้ดูแล', icon: UserCog },
+];
 
 const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
   const location = useLocation();
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' }, // เปลี่ยนจาก /dashboard เป็น /
-    { text: 'รายงาน', icon: <BarChartIcon />, path: '/reports' },
-    { text: 'ผู้ป่วย', icon: <PeopleIcon />, path: '/patients' },
-    { text: 'ผู้ดูแลระบบ', icon: <AdminPanelSettingsIcon />, path: '/admins' },
-  ];
-
   return (
-    <StyledDrawer variant="permanent" anchor="left" open={isSidebarOpen}>
-      <Toolbar>
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 'bold',
-            color: 'primary.main',
-            display: isSidebarOpen ? 'block' : 'none',
-          }}
-        >
-          HealthCare
-        </Typography>
-      </Toolbar>
-      <Box sx={{ overflow: 'auto' }}>
-        <List>
-          {menuItems.map((item) => (
-            <StyledListItem
-              button
-              component={Link}
-              to={item.path}
-              key={item.text}
-              active={location.pathname === item.path} // ยังคงใช้ active สำหรับ styling
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                sx={{ display: isSidebarOpen ? 'block' : 'none' }}
-              />
-            </StyledListItem>
-          ))}
-        </List>
-      </Box>
-    </StyledDrawer>
+    <>
+      {/* Overlay for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 z-50 h-full bg-white border-r border-slate-200 shadow-lg transition-all duration-300 ease-in-out flex flex-col",
+          isSidebarOpen ? "w-64" : "w-20",
+          "lg:translate-x-0",
+          !isSidebarOpen && "max-lg:-translate-x-full"
+        )}
+      >
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
+          <div className={cn(
+            "flex items-center gap-3 transition-all duration-300",
+            !isSidebarOpen && "lg:justify-center"
+          )}>
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            {isSidebarOpen && (
+              <div className="animate-fade-in">
+                <h1 className="font-bold text-slate-800 text-lg leading-tight">
+                  Diabetes
+                </h1>
+                <p className="text-xs text-slate-500">Monitoring</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="hidden lg:flex h-8 w-8"
+          >
+            {isSidebarOpen ? (
+              <ChevronLeft className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path || 
+              (item.path !== '/' && location.pathname.startsWith(item.path));
+
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
+                  isActive
+                    ? "bg-blue-50 text-blue-600 shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                  !isSidebarOpen && "lg:justify-center lg:px-2"
+                )}
+              >
+                <Icon className={cn(
+                  "w-5 h-5 flex-shrink-0 transition-colors",
+                  isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
+                )} />
+                {isSidebarOpen && (
+                  <span className="font-medium animate-fade-in">{item.label}</span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className={cn(
+          "p-4 border-t border-slate-200",
+          !isSidebarOpen && "lg:p-2"
+        )}>
+          {isSidebarOpen ? (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 animate-fade-in">
+              <div className="flex items-center gap-2 text-blue-600 mb-2">
+                <Activity className="w-4 h-4" />
+                <span className="text-sm font-medium">สถานะระบบ</span>
+              </div>
+              <p className="text-xs text-slate-500">ทำงานปกติ</p>
+              <div className="flex items-center gap-1 mt-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-xs text-green-600">Online</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
   );
 };
 

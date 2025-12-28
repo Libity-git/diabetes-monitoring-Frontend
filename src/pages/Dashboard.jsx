@@ -1,116 +1,71 @@
 // 📁 src/pages/Dashboard.jsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  Grid,
-  Paper,
-  Typography,
-  Box,
-  Alert,
-  CircularProgress,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-} from '@mui/material';
-import { styled, useTheme } from '@mui/material/styles';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import DashboardStats from '../components/DashboardStats';
-import ReportChart from '../components/ReportChart';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Skeleton } from '../components/ui/skeleton';
 import {
   getSummaryStats,
   getHighSugarAndHighPressureReports,
   getAllReports,
 } from '../services/reportService';
 import { useAuth } from '../contexts/AuthContext';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import WarningIcon from '@mui/icons-material/Warning';
-import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import RefreshIcon from '@mui/icons-material/Refresh';
-
-const DashboardContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
-  background: `linear-gradient(180deg, ${theme.palette.grey[50]} 0%, ${theme.palette.background.default} 100%)`,
-  minHeight: '100vh',
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2),
-  },
-}));
-
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  borderRadius: theme.shape.borderRadius * 2,
-  backgroundColor: theme.palette.common.white,
-  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-  transition: 'all 0.3s ease-in-out',
-  '&:hover': {
-    boxShadow: '0 6px 25px rgba(0, 0, 0, 0.1)',
-  },
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2),
-  },
-}));
-
-const StyledCard = styled(Card)(({ theme }) => ({
-  borderRadius: theme.shape.borderRadius * 2,
-  backgroundColor: theme.palette.common.white,
-  boxShadow: '0 2px 15px rgba(0, 0, 0, 0.05)',
-  transition: 'all 0.3s ease-in-out',
-  '&:hover': {
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-    transform: 'translateY(-2px)',
-  },
-}));
-
-const StyledButton = styled(Button)(({ theme }) => ({
-  textTransform: 'none',
-  borderRadius: theme.shape.borderRadius * 2,
-  padding: theme.spacing(1, 2),
-  fontWeight: 'medium',
-  backgroundColor: theme.palette.primary.main,
-  color: theme.palette.common.white,
-  '&:hover': {
-    backgroundColor: theme.palette.primary.dark,
-  },
-}));
+import {
+  Activity,
+  AlertTriangle,
+  Users,
+  Heart,
+  Droplets,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  Calendar,
+  Loader2,
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 const Dashboard = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
   const [stats, setStats] = useState(null);
   const [highSugarAndHighPressureReports, setHighSugarAndHighPressureReports] = useState([]);
   const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7))); // 31/05/2025
-  const [endDate, setEndDate] = useState(new Date()); // 07/06/2025 16:10
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)));
+  const [endDate, setEndDate] = useState(new Date());
 
   const fetchData = useCallback(async () => {
     if (!isAuthenticated) {
-      console.log('Not authenticated, redirecting to login');
       navigate('/login');
       return;
     }
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching data for period:', { startDate, endDate });
       const [statsData, reportsData, allReportsData] = await Promise.all([
         getSummaryStats({ startDate, endDate }),
         getHighSugarAndHighPressureReports({ startDate, endDate }),
         getAllReports({ startDate, endDate }),
       ]);
-      // Debug: ตรวจสอบโครงสร้างข้อมูล
-      console.log('Stats Data:', JSON.stringify(statsData, null, 2));
-      console.log('Reports Data:', JSON.stringify(reportsData, null, 2));
-      console.log('All Reports Data:', JSON.stringify(allReportsData, null, 2));
       if (!statsData || !reportsData || !allReportsData) {
-        throw new Error(`ข้อมูลจากเซิร์ฟเวอร์ว่างเปล่าสำหรับช่วงวันที่ ${startDate.toISOString()} - ${endDate.toISOString()}`);
+        throw new Error('ข้อมูลจากเซิร์ฟเวอร์ว่างเปล่า');
       }
       setStats(statsData);
       setHighSugarAndHighPressureReports(reportsData);
@@ -121,40 +76,15 @@ const Dashboard = () => {
         navigate('/login');
         return;
       }
-      setError(
-        err.response?.status === 500
-          ? `เซิร์ฟเวอร์มีปัญหา กรุณาลองใหม่อีกครั้งสำหรับช่วงวันที่ ${startDate.toISOString()} - ${endDate.toISOString()}`
-          : err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลแดชบอร์ด'
-      );
+      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
     }
   }, [startDate, endDate, isAuthenticated, navigate]);
 
   useEffect(() => {
-    console.log('Dashboard mounted or location changed:', location.pathname);
     fetchData();
   }, [fetchData, location.pathname]);
-
-  useEffect(() => {
-    console.log('Current state - stats:', stats);
-    console.log('Current state - reports:', highSugarAndHighPressureReports);
-    console.log('Current state - all reports:', allReports);
-  }, [stats, highSugarAndHighPressureReports, allReports]);
-
-  const handleDateChange = (type, newDate) => {
-    if (type === 'start' && newDate > endDate) {
-      setError('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด');
-      return;
-    }
-    if (type === 'end' && newDate < startDate) {
-      setError('วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น');
-      return;
-    }
-    setError(null);
-    type === 'start' ? setStartDate(newDate) : setEndDate(newDate);
-    fetchData(); // อัปเดตข้อมูลทันทีเมื่อเปลี่ยนวันที่
-  };
 
   const handleResetDates = () => {
     setStartDate(new Date(new Date().setDate(new Date().getDate() - 7)));
@@ -162,47 +92,15 @@ const Dashboard = () => {
     setError(null);
   };
 
-  if (loading) {
-    return (
-      <DashboardContainer>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-          <CircularProgress size={60} color="primary" />
-        </Box>
-      </DashboardContainer>
-    );
-  }
-
-  if (error) {
-    return (
-      <DashboardContainer>
-        <Alert severity="error" sx={{ m: 2, borderRadius: 2 }}>
-          {error}
-          <Box mt={2} display="flex" gap={2}>
-            <StyledButton onClick={fetchData}>ลองโหลดใหม่</StyledButton>
-            <StyledButton
-              onClick={() => navigate('/reports')}
-              variant="outlined"
-              color="secondary"
-            >
-              ไปที่หน้ารายงาน
-            </StyledButton>
-          </Box>
-        </Alert>
-      </DashboardContainer>
-    );
-  }
-
   const hasStatsData = stats && Object.keys(stats).length > 0;
   const hasReportsData = highSugarAndHighPressureReports && highSugarAndHighPressureReports.length > 0;
 
-  // คำนวณจำนวนผู้ป่วยที่มีความเสี่ยงโดยอิงจาก patient ID
   const criticalPatientsCount = hasReportsData
     ? [...new Set(highSugarAndHighPressureReports.map((report) => report.patient?.id))].length
     : 0;
 
- const uniquePatients = [...new Set(allReports.map((report) => report.patient?.id))].length;
+  const uniquePatients = [...new Set(allReports.map((report) => report.patient?.id))].length;
 
-  // เพิ่มการนับสำหรับสถานะเสี่ยงสูง
   const criticalSugarToday = hasReportsData
     ? highSugarAndHighPressureReports.filter((report) => report.bloodSugarStatus === 'เสี่ยงสูง').length
     : 0;
@@ -210,233 +108,384 @@ const Dashboard = () => {
     ? highSugarAndHighPressureReports.filter((report) => report.systolicStatus === 'เสี่ยงสูง').length
     : 0;
 
+  // Prepare chart data
+  const chartData = allReports.slice(0, 20).map((report) => ({
+    date: new Date(report.recordedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' }),
+    bloodSugar: report.bloodSugar,
+    systolic: report.systolic,
+    name: report.patient?.name || 'ไม่ระบุ',
+  })).reverse();
+
+  // Calculate patient distribution for Pie Chart
+  const calculatePatientDistribution = () => {
+    if (!allReports || allReports.length === 0) return [];
+    
+    // Group reports by patient
+    const patientMap = new Map();
+    allReports.forEach(report => {
+      const patientId = report.patient?.id;
+      if (!patientId) return;
+      
+      if (!patientMap.has(patientId)) {
+        patientMap.set(patientId, { highSugar: false, highPressure: false });
+      }
+      
+      const status = patientMap.get(patientId);
+      if (report.bloodSugarStatus === 'เสี่ยงสูง' || report.bloodSugarStatus === 'สูง') {
+        status.highSugar = true;
+      }
+      if (report.systolicStatus === 'เสี่ยงสูง' || report.systolicStatus === 'สูง') {
+        status.highPressure = true;
+      }
+    });
+
+    let normal = 0, highSugarOnly = 0, highPressureOnly = 0, highRisk = 0;
+    
+    patientMap.forEach(status => {
+      if (status.highSugar && status.highPressure) {
+        highRisk++;
+      } else if (status.highSugar) {
+        highSugarOnly++;
+      } else if (status.highPressure) {
+        highPressureOnly++;
+      } else {
+        normal++;
+      }
+    });
+
+    return [
+      { name: 'ปกติ', value: normal, color: '#22c55e' },
+      { name: 'น้ำตาลสูง', value: highSugarOnly, color: '#f59e0b' },
+      { name: 'ความดันสูง', value: highPressureOnly, color: '#f97316' },
+      { name: 'เสี่ยงสูง (ทั้งสอง)', value: highRisk, color: '#ef4444' },
+    ].filter(item => item.value > 0);
+  };
+
+  const pieData = calculatePatientDistribution();
+  const totalPatientsInPie = pieData.reduce((sum, item) => sum + item.value, 0);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-80 rounded-xl" />
+      </div>
+    );
+  }
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <DashboardContainer>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Box display="flex" alignItems="center" gap={2}>
-            <HealthAndSafetyIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
-            <Typography variant="h4" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-              แดชบอร์ดภาพรวมสุขภาพ
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <DatePicker
-              label="วันที่เริ่มต้น"
-              value={startDate}
-              onChange={(newDate) => handleDateChange('start', newDate)}
-              slotProps={{
-                textField: {
-                  variant: 'outlined',
-                  size: 'small',
-                  sx: { backgroundColor: theme.palette.common.white },
-                },
-              }}
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+            <Activity className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">แดชบอร์ดภาพรวม</h1>
+            <p className="text-sm text-slate-500">
+              ข้อมูลวันที่ {startDate.toLocaleDateString('th-TH')} - {endDate.toLocaleDateString('th-TH')}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white rounded-lg border px-3 py-2">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <input
+              type="date"
+              value={startDate.toISOString().split('T')[0]}
+              onChange={(e) => setStartDate(new Date(e.target.value))}
+              className="text-sm border-0 focus:ring-0 bg-transparent"
             />
-            <DatePicker
-              label="วันที่สิ้นสุด"
-              value={endDate}
-              onChange={(newDate) => handleDateChange('end', newDate)}
-              slotProps={{
-                textField: {
-                  variant: 'outlined',
-                  size: 'small',
-                  sx: { backgroundColor: theme.palette.common.white },
-                },
-              }}
+            <span className="text-slate-400">-</span>
+            <input
+              type="date"
+              value={endDate.toISOString().split('T')[0]}
+              onChange={(e) => setEndDate(new Date(e.target.value))}
+              className="text-sm border-0 focus:ring-0 bg-transparent"
             />
-            <StyledButton
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={fetchData}
-              disabled={loading}
-            >
-              รีเฟรช
-            </StyledButton>
-            <StyledButton
-              variant="outlined"
-              onClick={handleResetDates}
-              sx={{ ml: 1 }}
-              disabled={loading}
-            >
-              รีเซ็ตวันที่
-            </StyledButton>
-          </Box>
-        </Box>
+          </div>
+          <Button onClick={fetchData} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            รีเฟรช
+          </Button>
+        </div>
+      </div>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          ข้อมูลช่วงวันที่ {startDate.toLocaleDateString('th-TH')} - {endDate.toLocaleDateString('th-TH')}
-        </Typography>
+      {/* Alert for critical patients */}
+      {criticalPatientsCount > 0 && (
+        <Alert variant="warning" className="border-amber-200 bg-amber-50">
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <span className="font-medium">แจ้งเตือน!</span> มีผู้ป่วย {criticalPatientsCount} รายที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูง
+          </AlertDescription>
+        </Alert>
+      )}
 
-        {criticalPatientsCount > 0 && (
-          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
-            มีผู้ป่วย {criticalPatientsCount} รายที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูง กรุณาตรวจสอบ!
-          </Alert>
-        )}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        {(!hasStatsData && !hasReportsData) && (
-          <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-            ไม่มีข้อมูลสำหรับช่วงวันที่เลือก กรุณาเลือกช่วงวันที่อื่นหรือตรวจสอบฐานข้อมูล
-          </Alert>
-        )}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Critical Patients */}
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-500 to-rose-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-red-100 text-sm font-medium">ผู้ป่วยเสี่ยงสูง</p>
+                <p className="text-4xl font-bold mt-2">{criticalPatientsCount}</p>
+                <p className="text-red-100 text-xs mt-1">คน</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Grid container spacing={3}>
-          {/* การ์ดสรุปผู้ป่วยที่มีความเสี่ยง */}
-          <Grid item xs={12} sm={6} md={4}>
-            <StyledCard>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <WarningIcon sx={{ color: theme.palette.error.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                    ผู้ป่วยที่มีความเสี่ยง
-                  </Typography>
-                </Box>
-                <Typography variant="h4" sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}>
-                  {criticalPatientsCount} คน
-                </Typography>
-                <Typography variant="body2" color="text.secondary" mt={1}>
-                  ผู้ป่วยที่มีระดับน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูงในช่วงวันที่เลือก
-                </Typography>
-                {criticalPatientsCount > 0 && (
-                  <StyledButton
-                    variant="outlined"
-                    size="small"
-                    onClick={() => navigate('/reports')}
-                    sx={{ mt: 2 }}
-                    startIcon={<AssessmentIcon />}
-                  >
-                    ดูรายงาน
-                  </StyledButton>
-                )}
-              </CardContent>
-            </StyledCard>
-          </Grid>
+        {/* Total Patients */}
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">ผู้ป่วยทั้งหมด</p>
+                <p className="text-4xl font-bold mt-2">{uniquePatients}</p>
+                <p className="text-blue-100 text-xs mt-1">คน</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Users className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* การ์ดสรุปจำนวนผู้ป่วยทั้งหมด */}
-          <Grid item xs={12} sm={6} md={4}>
-            <StyledCard>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <TrendingUpIcon sx={{ color: theme.palette.success.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                    จำนวนผู้ป่วยทั้งหมด
-                  </Typography>
-                </Box>
-                <Typography variant="h4" sx={{ color: theme.palette.success.main, fontWeight: 'bold' }}>
-                  {uniquePatients} คน
-                </Typography>
-                <Typography variant="body2" color="text.secondary" mt={1}>
-                  จำนวนผู้ป่วยที่บันทึกในช่วงวันที่เลือก
-                </Typography>
-              </CardContent>
-            </StyledCard>
-          </Grid>
+        {/* Total Reports */}
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-green-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-emerald-100 text-sm font-medium">รายงานทั้งหมด</p>
+                <p className="text-4xl font-bold mt-2">{stats?.totalReportsToday || 0}</p>
+                <p className="text-emerald-100 text-xs mt-1">รายการ</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl">
+                <FileText className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* การ์ดสถานะ */}
-          <Grid item xs={12} md={4}>
-            <StyledCard>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <HealthAndSafetyIcon sx={{ color: theme.palette.info.main }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                    สถานะสุขภาพ
-                  </Typography>
-                </Box>
-                <Box display="flex" flexWrap="wrap" gap={1}>
-                  <Chip
-                    label={`น้ำตาลเสี่ยงสูง: ${criticalSugarToday}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium', backgroundColor: theme.palette.error.dark }}
-                  />
-                  <Chip
-                    label={`น้ำตาลสูง: ${stats?.highSugarToday || 0}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                  <Chip
-                    label={`น้ำตาลต่ำ: ${stats?.lowSugarToday || 0}`}
-                    color="warning"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                  <Chip
-                    label={`ความดันเสี่ยงสูง: ${criticalPressureToday}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium', backgroundColor: theme.palette.error.dark }}
-                  />
-                  <Chip
-                    label={`ความดันสูง: ${stats?.highPressureToday || 0}`}
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                  <Chip
-                    label={`ความดันต่ำ: ${stats?.lowPressureToday || 0}`}
-                    color="warning"
-                    size="small"
-                    sx={{ fontWeight: 'medium' }}
-                  />
-                </Box>
-              </CardContent>
-            </StyledCard>
-          </Grid>
+        {/* High Sugar Today */}
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-amber-100 text-sm font-medium">น้ำตาลสูง</p>
+                <p className="text-4xl font-bold mt-2">{stats?.highSugarToday || 0}</p>
+                <p className="text-amber-100 text-xs mt-1">รายการ</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Droplets className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* กราฟผู้ป่วยที่มีความเสี่ยง */}
-          <Grid item xs={12}>
-            <StyledPaper elevation={3}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <WarningIcon sx={{ color: theme.palette.error.main }} />
-                <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                  กราฟผู้ป่วยที่มีน้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูง
-                </Typography>
-              </Box>
-              <Box sx={{ height: { xs: 300, md: 400 }, mt: 2 }}>
-                {hasReportsData ? (
-                  <ReportChart
-                    data={highSugarAndHighPressureReports}
-                    dataKeys={{
-                      xAxis: 'recordedAt',
-                      lines: [
-                        { key: 'bloodSugar', name: 'ระดับน้ำตาล (mg/dL)', color: theme.palette.error.main },
-                        { key: 'systolic', name: 'ความดันซิสโตลิก (mmHg)', color: theme.palette.success.main },
-                      ],
-                    }}
-                    chartTitle="ผู้ป่วยที่น้ำตาลหรือความดันอยู่ในเกณฑ์เสี่ยงสูง"
-                    tooltipEnabled={true}
-                  />
-                ) : (
-                  <Typography variant="body1" color="text.secondary" align="center">
-                    ไม่มีข้อมูลสำหรับช่วงวันที่เลือก
-                  </Typography>
-                )}
-              </Box>
-            </StyledPaper>
-          </Grid>
+      {/* Charts Section - Pie Chart and Line Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Pie Chart - Patient Distribution */}
+        <Card className="shadow-lg border-0 lg:col-span-1">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Users className="w-5 h-5 text-indigo-500" />
+              สัดส่วนผู้ป่วย
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pieData.length > 0 ? (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="45%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      dataKey="value"
+                      labelLine={false}
+                      label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name) => [`${value} คน`, name]}
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Legend */}
+                <div className="flex flex-wrap justify-center gap-3 mt-2">
+                  {pieData.map((entry, index) => (
+                    <div key={index} className="flex items-center gap-1.5">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="text-xs text-slate-600">
+                        {entry.name} ({entry.value})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-sm text-slate-500 mt-3">
+                  รวม {totalPatientsInPie} คน
+                </p>
+              </div>
+            ) : (
+              <div className="h-72 flex items-center justify-center text-slate-400">
+                <div className="text-center">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>ไม่มีข้อมูลผู้ป่วย</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* สถิติเพิ่มเติมจาก DashboardStats */}
-          <Grid item xs={12}>
-            <StyledPaper elevation={3}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <AssessmentIcon sx={{ color: theme.palette.info.main }} />
-                <Typography variant="h6" sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
-                  สถิติสุขภาพรายวัน
-                </Typography>
-              </Box>
-              {hasStatsData ? (
-                <DashboardStats stats={stats} />
-              ) : (
-                <Typography variant="body1" color="text.secondary" align="center">
-                  ไม่มีข้อมูลสถิติสำหรับช่วงวันที่เลือก
-                </Typography>
-              )}
-            </StyledPaper>
-          </Grid>
-        </Grid>
-      </DashboardContainer>
-    </LocalizationProvider>
+        {/* Line Chart */}
+        <Card className="shadow-lg border-0 lg:col-span-2">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Activity className="w-5 h-5 text-blue-500" />
+              แนวโน้มค่าสุขภาพ
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {chartData.length > 0 ? (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="bloodSugar"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={{ fill: '#ef4444', strokeWidth: 2 }}
+                      name="น้ำตาล (mg/dL)"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="systolic"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+                      name="ความดัน (mmHg)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-72 flex items-center justify-center text-slate-400">
+                <div className="text-center">
+                  <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>ไม่มีข้อมูลสำหรับช่วงวันที่เลือก</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Health Status Summary */}
+      <Card className="shadow-lg border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Heart className="w-5 h-5 text-rose-500" />
+            สถานะสุขภาพ
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-red-500" />
+              <div>
+                <p className="text-xs text-slate-500">น้ำตาลเสี่ยงสูง</p>
+                <p className="font-bold text-red-600">{criticalSugarToday}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-orange-500" />
+              <div>
+                <p className="text-xs text-slate-500">น้ำตาลสูง</p>
+                <p className="font-bold text-orange-600">{stats?.highSugarToday || 0}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+              <TrendingDown className="w-4 h-4 text-blue-500" />
+              <div>
+                <p className="text-xs text-slate-500">น้ำตาลต่ำ</p>
+                <p className="font-bold text-blue-600">{stats?.lowSugarToday || 0}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-red-500" />
+              <div>
+                <p className="text-xs text-slate-500">ความดันเสี่ยงสูง</p>
+                <p className="font-bold text-red-600">{criticalPressureToday}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-orange-500" />
+              <div>
+                <p className="text-xs text-slate-500">ความดันสูง</p>
+                <p className="font-bold text-orange-600">{stats?.highPressureToday || 0}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-cyan-50 rounded-lg">
+              <TrendingDown className="w-4 h-4 text-cyan-500" />
+              <div>
+                <p className="text-xs text-slate-500">ความดันต่ำ</p>
+                <p className="font-bold text-cyan-600">{stats?.lowPressureToday || 0}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
