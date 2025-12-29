@@ -38,7 +38,7 @@ const LiffCaregiverRegister = () => {
 
   useEffect(() => {
     const init = async () => {
-      const initialized = await initLiff('register'); // Use register LIFF ID
+      const initialized = await initLiff('caregiverRegister'); // Use caregiver register LIFF ID
       if (initialized) {
         const userProfile = await getLiffProfile();
         if (userProfile) {

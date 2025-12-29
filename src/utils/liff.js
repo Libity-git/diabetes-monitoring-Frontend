@@ -6,6 +6,7 @@ const LIFF_IDS = {
   register: '2008792421-iVY1dt22',
   report: '2008792421-rhtZOZGm',
   healthInfo: '2008792421-2AewWTg2',
+  caregiverRegister: '2008792421-U0t6a8ns',
 };
 
 // Get LIFF ID based on current path
@@ -14,17 +15,18 @@ const getLiffIdByPath = () => {
   if (path.includes('/liff/caregiver-report')) return LIFF_IDS.report;
   if (path.includes('/liff/report')) return LIFF_IDS.report;
   if (path.includes('/liff/health-info')) return LIFF_IDS.healthInfo;
-  if (path.includes('/liff/caregiver-register')) return LIFF_IDS.register;
+  if (path.includes('/liff/caregiver-register')) return LIFF_IDS.caregiverRegister;
   if (path.includes('/liff/register')) return LIFF_IDS.register;
   return LIFF_IDS.register; // default
 };
 
 let isInitialized = false;
 
-export const initLiff = async (customLiffId = null) => {
+export const initLiff = async (liffKey = null) => {
   if (isInitialized) return true;
   
-  const liffId = customLiffId || getLiffIdByPath();
+  // If liffKey is a key in LIFF_IDS, get the actual ID; otherwise use path detection
+  const liffId = liffKey && LIFF_IDS[liffKey] ? LIFF_IDS[liffKey] : getLiffIdByPath();
   
   try {
     await liff.init({ liffId });
