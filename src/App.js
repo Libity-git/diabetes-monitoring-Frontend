@@ -9,6 +9,8 @@ import Login from './pages/Login';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import PatientDetail from './components/PatientDetail';
+import AddPatient from './pages/AddPatient';
+import ManualReport from './pages/ManualReport';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { cn } from './lib/utils';
@@ -17,6 +19,8 @@ import { cn } from './lib/utils';
 import LiffRegister from './pages/liff/LiffRegister';
 import LiffReport from './pages/liff/LiffReport';
 import LiffHealthInfo from './pages/liff/LiffHealthInfo';
+import LiffCaregiverRegister from './pages/liff/LiffCaregiverRegister';
+import LiffCaregiverReport from './pages/liff/LiffCaregiverReport';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -33,6 +37,8 @@ function App() {
       <Route path="/liff/register" element={<LiffRegister />} />
       <Route path="/liff/report" element={<LiffReport />} />
       <Route path="/liff/health-info" element={<LiffHealthInfo />} />
+      <Route path="/liff/caregiver-register" element={<LiffCaregiverRegister />} />
+      <Route path="/liff/caregiver-report" element={<LiffCaregiverReport />} />
       <Route
         path="/*"
         element={
@@ -50,6 +56,8 @@ function App() {
                 <Routes>
                   <Route index element={<Dashboard />} />
                   <Route path="patients" element={<Patients />} />
+                  <Route path="add-patient" element={<AddPatient />} />
+                  <Route path="manual-report" element={<ManualReport />} />
                   <Route path="reports" element={<Reports />} />
                   <Route path="admins" element={<Admins />} />
                   <Route path="patients/:patientId" element={<PatientDetail />} />

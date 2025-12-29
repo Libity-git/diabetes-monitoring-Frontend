@@ -10,11 +10,15 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  UserPlus,
+  ClipboardPlus,
 } from 'lucide-react';
 
 const menuItems = [
   { path: '/', label: 'แดชบอร์ด', icon: LayoutDashboard },
   { path: '/patients', label: 'ผู้ป่วย', icon: Users },
+  { path: '/add-patient', label: 'เพิ่มผู้ป่วย', icon: UserPlus },
+  { path: '/manual-report', label: 'กรอกแทน', icon: ClipboardPlus },
   { path: '/reports', label: 'รายงาน', icon: FileText },
   { path: '/admins', label: 'ผู้ดูแล', icon: UserCog },
 ];

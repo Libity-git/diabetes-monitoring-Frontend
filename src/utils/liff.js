@@ -11,8 +11,10 @@ const LIFF_IDS = {
 // Get LIFF ID based on current path
 const getLiffIdByPath = () => {
   const path = window.location.pathname;
+  if (path.includes('/liff/caregiver-report')) return LIFF_IDS.report;
   if (path.includes('/liff/report')) return LIFF_IDS.report;
   if (path.includes('/liff/health-info')) return LIFF_IDS.healthInfo;
+  if (path.includes('/liff/caregiver-register')) return LIFF_IDS.register;
   if (path.includes('/liff/register')) return LIFF_IDS.register;
   return LIFF_IDS.register; // default
 };
