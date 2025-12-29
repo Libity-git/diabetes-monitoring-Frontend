@@ -32,7 +32,7 @@ const LiffCaregiverReport = () => {
 
   useEffect(() => {
     const init = async () => {
-      const initialized = await initLiff('report'); // Use report LIFF ID
+      const initialized = await initLiff('caregiverReport'); // Use caregiver report LIFF ID
       if (initialized) {
         const userProfile = await getLiffProfile();
         if (userProfile) {

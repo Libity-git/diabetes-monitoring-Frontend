@@ -7,12 +7,13 @@ const LIFF_IDS = {
   report: '2008792421-rhtZOZGm',
   healthInfo: '2008792421-2AewWTg2',
   caregiverRegister: '2008792421-U0t6a8ns',
+  caregiverReport: '2008792421-iaIB4QtM',
 };
 
 // Get LIFF ID based on current path
 const getLiffIdByPath = () => {
   const path = window.location.pathname;
-  if (path.includes('/liff/caregiver-report')) return LIFF_IDS.report;
+  if (path.includes('/liff/caregiver-report')) return LIFF_IDS.caregiverReport;
   if (path.includes('/liff/report')) return LIFF_IDS.report;
   if (path.includes('/liff/health-info')) return LIFF_IDS.healthInfo;
   if (path.includes('/liff/caregiver-register')) return LIFF_IDS.caregiverRegister;
